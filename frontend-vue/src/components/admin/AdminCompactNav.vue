@@ -59,7 +59,7 @@
 import { ref } from 'vue';
 import AppIcon, { type IconName } from '../AppIcon.vue';
 
-export type AdminTab = 'HOME' | 'ESTUDIANTES' | 'CLASE_HOY' | 'AUDITORIA' | 'CONFIGURACION';
+export type AdminTab = 'HOME' | 'ESTUDIANTES' | 'CLASE_HOY' | 'CONFIGURACION';
 
 defineProps<{
   modelValue: AdminTab;

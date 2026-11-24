@@ -91,7 +91,6 @@
         </div>
 
         <AssistantClassLogView v-else-if="activeSection === 'CLASE_HOY'" />
-        <AuditViewerView v-else-if="activeSection === 'AUDITORIA'" />
         <AdminSettingsView v-else />
       </div>
     </div>
@@ -112,7 +111,6 @@ import StudentBeltCard from '../components/StudentBeltCard.vue';
 import StudentDetailModal from '../components/StudentDetailModal.vue';
 import CreateStudentModal from '../components/CreateStudentModal.vue';
 import AssistantClassLogView from './AssistantClassLogView.vue';
-import AuditViewerView from './AuditViewerView.vue';
 import AdminSettingsView from './AdminSettingsView.vue';
 
 type StatusFilter = 'TODOS' | 'VERDE' | 'AMARILLO' | 'ROJO' | 'ESTRELLA';
@@ -137,7 +135,6 @@ const tabs = computed<{ id: AdminTab; icon: IconName; label: string; badge?: num
   { id: 'HOME', icon: 'home', label: 'Home' },
   { id: 'ESTUDIANTES', icon: 'users', label: 'Estudiantes', badge: store.students.value.length },
   { id: 'CLASE_HOY', icon: 'calendar', label: 'Clase Hoy', badge: store.inClassCount.value },
-  { id: 'AUDITORIA', icon: 'shield', label: 'Auditoría', badge: store.inClassCount.value },
   { id: 'CONFIGURACION', icon: 'settings', label: 'Configuración' },
 ]);
 

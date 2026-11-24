@@ -7,6 +7,7 @@ import {
   students,
 } from './dojoState';
 import { changeStudentBelt } from './useStudents';
+import { verifyAdminPassword } from './useAuth';
 
 export function getBeltPath(beltId: number): LearningMilestone[] {
   return beltLearningPaths.value[beltId] || [];
@@ -92,7 +93,7 @@ export function promoteStudentViaPath(
   if (!path.every((m) => done.includes(m.id))) {
     return { ok: false, message: 'Debes completar todas las metas anteriores.' };
   }
-  if (!['AdminDojo2026!', 'admin123', 'demo'].includes(password.trim())) {
+  if (!verifyAdminPassword(password)) {
     return { ok: false, message: 'Contraseña de administrador incorrecta.' };
   }
   if (student.currentBeltId >= belts.value.length) {
