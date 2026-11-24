@@ -1,0 +1,18 @@
+{
+  "name": "Kung Fu Dojo",
+  "short_name": "Kung Fu Dojo",
+  "description": "Sistema de Gestión de Dojo, Asistencia GPS, Mensualidades y Rutas de Aprendizaje",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090a0e",
+  "theme_color": "#090a0e",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
