@@ -1,0 +1,33 @@
+{
+  "name": "dojo-hybrid-frontend-vue",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Frontend Vue 3 + Vite + Tailwind CSS + Capacitor Android del Sistema de Gestión de Dojo",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "start": "vite --host 0.0.0.0 --port 4200",
+    "build": "vite build",
+    "preview": "vite preview",
+    "cap:add:android": "npx cap add android",
+    "cap:sync": "npm run build && npx cap sync android",
+    "cap:open:android": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/camera": "^6.0.2",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/geolocation": "^6.0.1",
+    "@capacitor/local-notifications": "^6.0.1",
+    "vue": "^3.5.12"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2",
+    "@vitejs/plugin-vue": "^5.1.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.41",
+    "tailwindcss": "^3.4.10",
+    "typescript": "~5.5.2",
+    "vite": "^5.4.8"
+  }
+}

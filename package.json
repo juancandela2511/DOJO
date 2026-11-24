@@ -1,0 +1,22 @@
+{
+  "name": "dojo-hybrid-microservices-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monorepo del Sistema Híbrido de Gestión de Dojo (Web + Android Capacitor + 6 Microservicios)",
+  "scripts": {
+    "dev": "npm --prefix frontend-vue run start",
+    "dev:frontend": "npm --prefix frontend-vue run start",
+    "dev:vue": "npm --prefix frontend-vue run start",
+    "dev:angular": "npm --prefix frontend run start",
+    "dev:gateway": "npm --prefix services/api-gateway run dev",
+    "dev:auth": "npm --prefix services/auth-audit-service run dev",
+    "dev:students": "npm --prefix services/students-docs-service run dev",
+    "dev:memberships": "npm --prefix services/memberships-service run dev",
+    "dev:attendance": "npm --prefix services/attendance-classes-service run dev",
+    "dev:notifications": "npm --prefix services/notifications-service run dev",
+    "build": "npm --prefix frontend-vue run build",
+    "install:all": "npm --prefix frontend-vue install && npm --prefix services/api-gateway install && npm --prefix services/auth-audit-service install && npm --prefix services/students-docs-service install && npm --prefix services/memberships-service install && npm --prefix services/attendance-classes-service install && npm --prefix services/notifications-service install",
+    "docker:up": "docker compose up --build -d",
+    "docker:down": "docker compose down"
+  }
+}

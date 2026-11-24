@@ -1,0 +1,212 @@
+# ==============================================================================
+# ORQUESTACIÓN DE CONTENEDORES - SISTEMA HÍBRIDO DE GESTIÓN DE DOJO
+# Archivo: docker-compose.yml
+# Descripción: Levanta PostgreSQL, los 6 microservicios de backend, volúmenes
+#              de almacenamiento seguro de documentos (Fotos, CC, EPS) y la Web.
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. BASE DE DATOS RELACIONAL: PostgreSQL 16 Alpine
+  # Ejecuta automáticamente los scripts de ./database/init al primer arranque
+  # ----------------------------------------------------------------------------
+  dojo-postgres:
+    image: postgres:16-alpine
+    container_name: dojo-postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dojo_management_db}
+      POSTGRES_USER: ${POSTGRES_USER:-dojo_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-DojoSuperSecretDbPass2026!}
+      TZ: ${TZ:-America/Bogota}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # Persistencia de datos de PostgreSQL
+      - dojo_pgdata:/var/lib/postgresql/data
+      # Scripts SQL de inicialización modular (< 300 líneas cada uno)
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - dojo-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dojo_admin} -d ${POSTGRES_DB:-dojo_management_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------------------------------
+  # 2. MICROSERVICIO: Autenticación, Roles (RBAC) y Auditoría Inmutable
+  #Gestiona login persistente, refresh tokens y la tabla inmutable audit_logs
+  # ----------------------------------------------------------------------------
+  auth-audit-service:
+    build:
+      context: ./services/auth-audit-service
+      dockerfile: Dockerfile
+    container_name: dojo-auth-audit-service
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: ${AUTH_AUDIT_SERVICE_PORT:-3001}
+    ports:
+      - "${AUTH_AUDIT_SERVICE_PORT:-3001}:3001"
+    depends_on:
+      dojo-postgres:
+        condition: service_healthy
+    networks:
+      - dojo-network
+
+  # ----------------------------------------------------------------------------
+  # 3. MICROSERVICIO: Estudiantes, Cinturones, Documentos y Motor OCR
+  # Gestiona ficha de alumnos, ascensos de grado, fotos, CC, EPS y extracción OCR
+  # ----------------------------------------------------------------------------
+  students-docs-service:
+    build:
+      context: ./services/students-docs-service
+      dockerfile: Dockerfile
+    container_name: dojo-students-docs-service
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: ${STUDENTS_DOCS_SERVICE_PORT:-3002}
+    ports:
+      - "${STUDENTS_DOCS_SERVICE_PORT:-3002}:3002"
+    volumes:
+      # Volumen persistente y seguro para fotos de perfil, copias de CC y EPS
+      - dojo_uploads_storage:/app/storage/uploads
+    depends_on:
+      dojo-postgres:
+        condition: service_healthy
+      auth-audit-service:
+        condition: service_started
+    networks:
+      - dojo-network
+
+  # ----------------------------------------------------------------------------
+  # 4. MICROSERVICIO: Mensualidades, Semáforo Visual y Renovación Manual Admin
+  # Calcula días restantes, color (VERDE/AMARILLO/ROJO) y bloquea auto-renovación
+  # ----------------------------------------------------------------------------
+  memberships-service:
+    build:
+      context: ./services/memberships-service
+      dockerfile: Dockerfile
+    container_name: dojo-memberships-service
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: ${MEMBERSHIPS_SERVICE_PORT:-3003}
+    ports:
+      - "${MEMBERSHIPS_SERVICE_PORT:-3003}:3003"
+    depends_on:
+      dojo-postgres:
+        condition: service_healthy
+      auth-audit-service:
+        condition: service_started
+    networks:
+      - dojo-network
+
+  # ----------------------------------------------------------------------------
+  # 5. MICROSERVICIO: Asistencia, Historial de Clases y Geofencing GPS
+  # Procesa pings GPS desde Android y bitácora de técnicas por clase (Ayudante/Admin)
+  # ----------------------------------------------------------------------------
+  attendance-classes-service:
+    build:
+      context: ./services/attendance-classes-service
+      dockerfile: Dockerfile
+    container_name: dojo-attendance-classes-service
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: ${ATTENDANCE_CLASSES_SERVICE_PORT:-3004}
+    ports:
+      - "${ATTENDANCE_CLASSES_SERVICE_PORT:-3004}:3004"
+    depends_on:
+      dojo-postgres:
+        condition: service_healthy
+      auth-audit-service:
+        condition: service_started
+    networks:
+      - dojo-network
+
+  # ----------------------------------------------------------------------------
+  # 6. MICROSERVICIO: Notificaciones Push y Alertas Locales (Android & Web)
+  # Dispara avisos de ingreso a clase ("Estás en clase"), vencimientos y ascensos
+  # ----------------------------------------------------------------------------
+  notifications-service:
+    build:
+      context: ./services/notifications-service
+      dockerfile: Dockerfile
+    container_name: dojo-notifications-service
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: ${NOTIFICATIONS_SERVICE_PORT:-3005}
+    ports:
+      - "${NOTIFICATIONS_SERVICE_PORT:-3005}:3005"
+    depends_on:
+      dojo-postgres:
+        condition: service_healthy
+    networks:
+      - dojo-network
+
+  # ----------------------------------------------------------------------------
+  # 7. API GATEWAY: Punto Único de Entrada, Enrutamiento, JWT, RBAC y Rate Limit
+  # ----------------------------------------------------------------------------
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: dojo-api-gateway
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: ${API_GATEWAY_PORT:-8080}
+    ports:
+      - "${API_GATEWAY_PORT:-8080}:8080"
+    depends_on:
+      - auth-audit-service
+      - students-docs-service
+      - memberships-service
+      - attendance-classes-service
+      - notifications-service
+    networks:
+      - dojo-network
+
+  # ----------------------------------------------------------------------------
+  # 8. FRONTEND HÍBRIDO WEB (Angular Standalone + Tailwind CSS servido en Nginx)
+  # ----------------------------------------------------------------------------
+  frontend-web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: dojo-frontend-web
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_WEB_PORT:-4200}:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - dojo-network
+
+# ==============================================================================
+# DEFINICIÓN DE REDES Y VOLÚMENES PERSISTENTES
+# ==============================================================================
+networks:
+  dojo-network:
+    driver: bridge
+    name: dojo_internal_net
+
+volumes:
+  # Volumen para los datos de PostgreSQL
+  dojo_pgdata:
+    name: dojo_postgres_data
+  # Volumen para almacenar fotos de estudiantes, copias de Cédula (CC) y EPS
+  dojo_uploads_storage:
+    name: dojo_secure_uploads
